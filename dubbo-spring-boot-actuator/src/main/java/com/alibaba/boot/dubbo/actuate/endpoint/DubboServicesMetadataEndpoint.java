@@ -36,52 +36,43 @@ public class DubboServicesMetadataEndpoint extends AbstractDubboEndpoint {
 
     @ReadOperation
     public Map<String, Map<String, Object>> services() {
-
-        Map<String, ServiceBean> serviceBeansMap = getServiceBeansMap();
-
+        // 获得所有的 ServiceBean
+        Map<String, ServiceBean> serviceBeansMap = super.getServiceBeansMap();
+        // 创建 Map
+        // KEY：Bean 的名字
+        // VALUE：Bean 的元数据
         Map<String, Map<String, Object>> servicesMetadata = new LinkedHashMap<>(serviceBeansMap.size());
 
+        // 遍历 serviceBeansMap 元素
         for (Map.Entry<String, ServiceBean> entry : serviceBeansMap.entrySet()) {
-
+            // 获得 Bean 的名字
             String serviceBeanName = entry.getKey();
-
+            // 获得 ServiceBean 对象
             ServiceBean serviceBean = entry.getValue();
-
-            Map<String, Object> serviceBeanMetadata = resolveBeanMetadata(serviceBean);
-
+            // 获得 Bean 的元数据
+            Map<String, Object> serviceBeanMetadata = super.resolveBeanMetadata(serviceBean);
+            // 获得 Service 对象。若获得到，则添加到 serviceBeanMetadata 中
             Object service = resolveServiceBean(serviceBeanName, serviceBean);
-
             if (service != null) {
                 // Add Service implementation class
                 serviceBeanMetadata.put("serviceClass", service.getClass().getName());
             }
-
+            // 添加到 servicesMetadata 中
             servicesMetadata.put(serviceBeanName, serviceBeanMetadata);
-
         }
-
         return servicesMetadata;
-
     }
 
     private Object resolveServiceBean(String serviceBeanName, ServiceBean serviceBean) {
-
         int index = serviceBeanName.indexOf("#");
-
         if (index > -1) {
-
             Class<?> interfaceClass = serviceBean.getInterfaceClass();
-
             String serviceName = serviceBeanName.substring(index + 1);
-
             if (applicationContext.containsBean(serviceName)) {
                 return applicationContext.getBean(serviceName, interfaceClass);
             }
-
         }
-
         return null;
-
     }
 
 }

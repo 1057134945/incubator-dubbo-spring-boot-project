@@ -19,8 +19,8 @@ package com.alibaba.boot.dubbo.actuate.endpoint;
 import com.alibaba.dubbo.config.ProtocolConfig;
 import com.alibaba.dubbo.config.spring.ServiceBean;
 import com.alibaba.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor;
-
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -39,8 +39,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.alibaba.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor.BEAN_NAME;
-import static org.springframework.beans.factory.BeanFactoryUtils.beansOfTypeIncludingAncestors;
 import static org.springframework.util.ClassUtils.isPrimitiveOrWrapper;
 
 /**
@@ -67,51 +65,51 @@ public abstract class AbstractDubboEndpoint implements ApplicationContextAware, 
         }
     }
 
+    /**
+     * 解析 Bean 的元数据
+     *
+     * @param bean Bean 对象
+     * @return 元数据
+     */
     protected Map<String, Object> resolveBeanMetadata(final Object bean) {
-
+        // 创建 Map
         final Map<String, Object> beanMetadata = new LinkedHashMap<>();
-
         try {
-
+            // 获得 BeanInfo 对象
             BeanInfo beanInfo = Introspector.getBeanInfo(bean.getClass());
+            // 获得 PropertyDescriptor 数组
             PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
-
+            // 遍历 PropertyDescriptor 数组
             for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
-
+                // 获得 Method 对象
                 Method readMethod = propertyDescriptor.getReadMethod();
-
+                // 读取属性，添加到 beanMetadata 中
                 if (readMethod != null && isSimpleType(propertyDescriptor.getPropertyType())) {
-
                     String name = Introspector.decapitalize(propertyDescriptor.getName());
                     Object value = readMethod.invoke(bean);
-
                     beanMetadata.put(name, value);
                 }
-
             }
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
         return beanMetadata;
-
     }
 
     protected Map<String, ServiceBean> getServiceBeansMap() {
-        return beansOfTypeIncludingAncestors(applicationContext, ServiceBean.class);
+        return BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ServiceBean.class);
     }
 
     protected ReferenceAnnotationBeanPostProcessor getReferenceAnnotationBeanPostProcessor() {
-        return applicationContext.getBean(BEAN_NAME, ReferenceAnnotationBeanPostProcessor.class);
+        return applicationContext.getBean(ReferenceAnnotationBeanPostProcessor.BEAN_NAME, ReferenceAnnotationBeanPostProcessor.class);
     }
 
     protected Map<String, ProtocolConfig> getProtocolConfigsBeanMap() {
-        return beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class);
+        return BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class);
     }
 
     private static boolean isSimpleType(Class<?> type) {
-        return isPrimitiveOrWrapper(type)
+        return isPrimitiveOrWrapper(type) // 基本类型 or 包装类型
                 || type == String.class
                 || type == BigDecimal.class
                 || type == BigInteger.class
@@ -120,6 +118,5 @@ public abstract class AbstractDubboEndpoint implements ApplicationContextAware, 
                 || type == Class.class
                 ;
     }
-
 
 }

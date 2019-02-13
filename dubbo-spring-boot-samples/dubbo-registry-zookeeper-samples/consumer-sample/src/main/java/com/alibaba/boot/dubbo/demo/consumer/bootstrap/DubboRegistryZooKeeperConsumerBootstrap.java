@@ -43,6 +43,9 @@ public class DubboRegistryZooKeeperConsumerBootstrap {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(DubboRegistryZooKeeperConsumerBootstrap.class).close();
+        SpringApplication.run(DubboRegistryZooKeeperConsumerBootstrap.class) // 启动
+                .close(); // 关闭
+//        SpringApplication.run(DubboRegistryZooKeeperConsumerBootstrap.class);
     }
+
 }

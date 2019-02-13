@@ -16,12 +16,11 @@
  */
 package com.alibaba.boot.dubbo.actuate.endpoint;
 
+import com.alibaba.boot.dubbo.util.DubboUtils;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 
 import java.util.SortedMap;
-
-import static com.alibaba.boot.dubbo.util.DubboUtils.filterDubboProperties;
 
 /**
  * Dubbo Properties {@link Endpoint}
@@ -34,9 +33,7 @@ public class DubboPropertiesEndpoint extends AbstractDubboEndpoint {
 
     @ReadOperation
     public SortedMap<String, Object> properties() {
-
-        return filterDubboProperties(environment);
-
+        return DubboUtils.filterDubboProperties(environment);
     }
 
 }

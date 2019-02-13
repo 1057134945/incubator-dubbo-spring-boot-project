@@ -46,6 +46,9 @@ public class AwaitingNonWebApplicationListener implements SmartApplicationListen
     private static final Class<? extends ApplicationEvent>[] SUPPORTED_APPLICATION_EVENTS =
             of(ApplicationReadyEvent.class, ContextClosedEvent.class);
 
+    /**
+     * 是否已经等待完成
+     */
     private static final AtomicBoolean awaited = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
@@ -83,29 +86,30 @@ public class AwaitingNonWebApplicationListener implements SmartApplicationListen
     }
 
     protected void onApplicationReadyEvent(ApplicationReadyEvent event) {
-
+        // 如果是 Web 环境，则直接返回
         final SpringApplication springApplication = event.getSpringApplication();
-
         if (!WebApplicationType.NONE.equals(springApplication.getWebApplicationType())) {
             return;
         }
-
+        // 启动一个用户线程，从而实现等待
         await();
-
     }
 
     protected void onContextClosedEvent(ContextClosedEvent event) {
+        // 释放
         release();
+        // 关闭线程池
         shutdown();
     }
 
     protected void await() {
-
         // has been waited, return immediately
+        // 如果已经处于阻塞等待，直接返回
         if (awaited.get()) {
             return;
         }
 
+        // 创建任务，实现阻塞
         executorService.execute(() -> executeMutually(() -> {
             while (!awaited.get()) {
                 if (logger.isInfoEnabled()) {
@@ -113,6 +117,7 @@ public class AwaitingNonWebApplicationListener implements SmartApplicationListen
                 }
                 try {
                     condition.await();
+                    System.out.println("123");
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -122,10 +127,12 @@ public class AwaitingNonWebApplicationListener implements SmartApplicationListen
 
     protected void release() {
         executeMutually(() -> {
+            // CAS 设置 awaited 为 true
             while (awaited.compareAndSet(false, true)) {
                 if (logger.isInfoEnabled()) {
                     logger.info(" [Dubbo] Current Spring Boot Application is about to shutdown...");
                 }
+                // 通知 Condition
                 condition.signalAll();
             }
         });
@@ -141,6 +148,7 @@ public class AwaitingNonWebApplicationListener implements SmartApplicationListen
     private void executeMutually(Runnable runnable) {
         try {
             lock.lock();
+            // 执行 Runnable
             runnable.run();
         } finally {
             lock.unlock();

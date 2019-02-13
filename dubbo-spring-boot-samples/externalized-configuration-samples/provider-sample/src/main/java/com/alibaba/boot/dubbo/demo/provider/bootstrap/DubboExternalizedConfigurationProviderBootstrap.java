@@ -17,10 +17,9 @@
 package com.alibaba.boot.dubbo.demo.provider.bootstrap;
 
 import com.alibaba.boot.dubbo.demo.provider.service.DefaultDemoService;
-
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 
 /**
  * Dubbo Externalized Configuration Provider Bootstrap
@@ -28,12 +27,12 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
  * @see DefaultDemoService
  * @since 1.0.0
  */
-@EnableAutoConfiguration
+@SpringBootApplication
 public class DubboExternalizedConfigurationProviderBootstrap {
 
-    public static void main(String[] args) {
-        new SpringApplicationBuilder(DubboExternalizedConfigurationProviderBootstrap.class)
-                .web(WebApplicationType.NONE)
+    public static void main(String[] args) throws InterruptedException {
+        ConfigurableApplicationContext ctx = new SpringApplicationBuilder(DubboExternalizedConfigurationProviderBootstrap.class)
+//                .web(WebApplicationType.NONE)
                 .run(args);
     }
 }

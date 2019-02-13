@@ -55,145 +55,135 @@ public class DubboHealthIndicator extends AbstractHealthIndicator {
 
     @Override
     protected void doHealthCheck(Health.Builder builder) throws Exception {
-
+        // 获得 StatusChecker 对应的 Dubbo ExtensionLoader 对象
         ExtensionLoader<StatusChecker> extensionLoader = getExtensionLoader(StatusChecker.class);
-
+        // 解析 StatusChecker 的名字的 Map
         Map<String, String> statusCheckerNamesMap = resolveStatusCheckerNamesMap();
 
-        boolean hasError = false;
-
-        boolean hasUnknown = false;
+        // 声明 hasError、hasUnknown 变量
+        boolean hasError = false; // 是否有错误的返回
+        boolean hasUnknown = false; // 是否有未知的返回
 
         // Up first
+        // 先 builder 标记状态是 UP
         builder.up();
 
+        // 遍历 statusCheckerNamesMap 元素
         for (Map.Entry<String, String> entry : statusCheckerNamesMap.entrySet()) {
-
+            // 获得 StatusChecker 的名字
             String statusCheckerName = entry.getKey();
-
+            // 获得 source
             String source = entry.getValue();
-
+            // 获得 StatusChecker 对象
             StatusChecker checker = extensionLoader.getExtension(statusCheckerName);
-
+            // 执行校验
             com.alibaba.dubbo.common.status.Status status = checker.check();
 
+            // 获得校验结果
             com.alibaba.dubbo.common.status.Status.Level level = status.getLevel();
-
-            if (!hasError && level.equals(com.alibaba.dubbo.common.status.Status.Level.ERROR)) {
+            // 如果是 ERROR 检验结果，则标记 hasError 为 true ，并标记 builder 状态为 down
+            if (!hasError // 不存在 hasError 的时候
+                    && level.equals(com.alibaba.dubbo.common.status.Status.Level.ERROR)) {
                 hasError = true;
                 builder.down();
             }
-
-            if (!hasError && !hasUnknown && level.equals(com.alibaba.dubbo.common.status.Status.Level.UNKNOWN)) {
+            // 如果是 UNKNOWN 检验结果，则标记 hasUnknown 为 true ，并标记 builder 状态为 unknown
+            if (!hasError && !hasUnknown // 不存在 hasError 且不存在 hasUnknown
+                    && level.equals(com.alibaba.dubbo.common.status.Status.Level.UNKNOWN)) {
                 hasUnknown = true;
                 builder.unknown();
             }
 
+            // 创建 detail Map
             Map<String, Object> detail = new LinkedHashMap<>();
-
+            // 设置 detail 属性值
             detail.put("source", source);
-            detail.put("status", status);
-
+            detail.put("status", status); // 校验结果
+            // 添加到 builder 中
             builder.withDetail(statusCheckerName, detail);
-
         }
-
-
     }
 
     /**
      * Resolves the map of {@link StatusChecker}'s name and its' source.
      *
+     * 解析 StatusChecker 的名字的 Map
+     *
+     * KEY：StatusChecker 的名字
+     * VALUE：配置的来源
+     *
      * @return non-null {@link Map}
      */
     protected Map<String, String> resolveStatusCheckerNamesMap() {
-
+        // 创建 Map
         Map<String, String> statusCheckerNamesMap = new LinkedHashMap<>();
-
+        // 1. 从 DubboHealthIndicatorProperties 中获取
         statusCheckerNamesMap.putAll(resolveStatusCheckerNamesMapFromDubboHealthIndicatorProperties());
-
+        // 2. 从 ProtocolConfig 中获取
         statusCheckerNamesMap.putAll(resolveStatusCheckerNamesMapFromProtocolConfigs());
-
+        // 3. 从 ProviderConfig 中获取
         statusCheckerNamesMap.putAll(resolveStatusCheckerNamesMapFromProviderConfig());
-
         return statusCheckerNamesMap;
-
     }
 
     private Map<String, String> resolveStatusCheckerNamesMapFromDubboHealthIndicatorProperties() {
-
-        DubboHealthIndicatorProperties.Status status =
-                dubboHealthIndicatorProperties.getStatus();
-
+        // 获得 DubboHealthIndicatorProperties.Status
+        DubboHealthIndicatorProperties.Status status = dubboHealthIndicatorProperties.getStatus();
+        // 创建 Map
         Map<String, String> statusCheckerNamesMap = new LinkedHashMap<>();
-
+        // 1. 读取 defaults 属性
         for (String statusName : status.getDefaults()) {
-
             statusCheckerNamesMap.put(statusName, PREFIX + ".status.defaults");
-
         }
-
+        // 2. 读取 extras 属性
         for (String statusName : status.getExtras()) {
-
             statusCheckerNamesMap.put(statusName, PREFIX + ".status.extras");
-
         }
-
         return statusCheckerNamesMap;
-
     }
 
-
     private Map<String, String> resolveStatusCheckerNamesMapFromProtocolConfigs() {
-
+        // 创建 Map
         Map<String, String> statusCheckerNamesMap = new LinkedHashMap<>();
-
+        // 遍历 protocolConfigs
         for (Map.Entry<String, ProtocolConfig> entry : protocolConfigs.entrySet()) {
-
+            // 获得 Bean 的名字
             String beanName = entry.getKey();
-
+            // 获得 ProtocolConfig 对象
             ProtocolConfig protocolConfig = entry.getValue();
-
+            // 获得 ProtocolConfig 的 StatusChecker 的名字的集合
             Set<String> statusCheckerNames = getStatusCheckerNames(protocolConfig);
-
+            // 遍历 statusCheckerNames 数组
             for (String statusCheckerName : statusCheckerNames) {
-
+                // 构建 source 属性
                 String source = buildSource(beanName, protocolConfig);
-
+                // 添加到 statusCheckerNamesMap 中
                 statusCheckerNamesMap.put(statusCheckerName, source);
-
             }
-
         }
-
         return statusCheckerNamesMap;
-
     }
 
     private Map<String, String> resolveStatusCheckerNamesMapFromProviderConfig() {
-
+        // 创建 Map
         Map<String, String> statusCheckerNamesMap = new LinkedHashMap<>();
-
+        // 遍历 providerConfigs
         for (Map.Entry<String, ProviderConfig> entry : providerConfigs.entrySet()) {
-
+            // 获得 Bean 的名字
             String beanName = entry.getKey();
-
+            // 获得 ProviderConfig 对象
             ProviderConfig providerConfig = entry.getValue();
-
+            // 获得 ProtocolConfig 的 StatusChecker 的名字的集合
             Set<String> statusCheckerNames = getStatusCheckerNames(providerConfig);
-
+            // 遍历 statusCheckerNames 数组
             for (String statusCheckerName : statusCheckerNames) {
-
+                // 构建 source 属性
                 String source = buildSource(beanName, providerConfig);
-
+                // 添加到 statusCheckerNamesMap 中
                 statusCheckerNamesMap.put(statusCheckerName, source);
-
             }
-
         }
-
         return statusCheckerNamesMap;
-
     }
 
     private Set<String> getStatusCheckerNames(ProtocolConfig protocolConfig) {

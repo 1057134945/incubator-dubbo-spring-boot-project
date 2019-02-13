@@ -77,7 +77,9 @@ public class DubboDefaultPropertiesEnvironmentPostProcessor implements Environme
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         MutablePropertySources propertySources = environment.getPropertySources();
+        // 生成 Dubbo 默认配置
         Map<String, Object> defaultProperties = createDefaultProperties(environment);
+        // 有默认配置，则添加到 environment 中
         if (!CollectionUtils.isEmpty(defaultProperties)) {
             addOrReplace(propertySources, defaultProperties);
         }
@@ -90,8 +92,11 @@ public class DubboDefaultPropertiesEnvironmentPostProcessor implements Environme
 
     private Map<String, Object> createDefaultProperties(ConfigurableEnvironment environment) {
         Map<String, Object> defaultProperties = new HashMap<String, Object>();
+        // "dubbo.application.name"
         setDubboApplicationNameProperty(environment, defaultProperties);
+        // "dubbo.config.multiple"
         setDubboConfigMultipleProperty(defaultProperties);
+        // "dubbo.application.qos-enable"
         setDubboApplicationQosEnableProperty(defaultProperties);
         return defaultProperties;
     }
@@ -118,13 +123,14 @@ public class DubboDefaultPropertiesEnvironmentPostProcessor implements Environme
      * @param propertySources {@link MutablePropertySources}
      * @param map             Default Dubbo Properties
      */
-    private void addOrReplace(MutablePropertySources propertySources,
-                              Map<String, Object> map) {
+    private void addOrReplace(MutablePropertySources propertySources, Map<String, Object> map) {
+        // 情况一，获得到 "defaultProperties" 对应的 PropertySource 对象，则进行替换
         MapPropertySource target = null;
         if (propertySources.contains(PROPERTY_SOURCE_NAME)) {
             PropertySource<?> source = propertySources.get(PROPERTY_SOURCE_NAME);
-            if (source instanceof MapPropertySource) {
+            if (source instanceof MapPropertySource) { // 找到
                 target = (MapPropertySource) source;
+                // 遍历 map 数组，进行替换到 "defaultProperties" 中
                 for (String key : map.keySet()) {
                     if (!target.containsProperty(key)) {
                         target.getSource().put(key, map.get(key));
@@ -132,6 +138,7 @@ public class DubboDefaultPropertiesEnvironmentPostProcessor implements Environme
                 }
             }
         }
+        // 情况二，不存在 "defaultProperties" 对应的 PropertySource 对象，则进行添加
         if (target == null) {
             target = new MapPropertySource(PROPERTY_SOURCE_NAME, map);
         }
@@ -139,4 +146,5 @@ public class DubboDefaultPropertiesEnvironmentPostProcessor implements Environme
             propertySources.addLast(target);
         }
     }
+
 }
